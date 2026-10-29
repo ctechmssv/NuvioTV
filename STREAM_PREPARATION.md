@@ -42,3 +42,19 @@ The existing loading overlay displays stage, startup percentage, bytes/target, s
 Unit coverage exercises strict parsing/origin validation, telemetry, ready handoff, POST/GET sequencing, cancellation/deadline cleanup, malformed/failed/network responses, unknown versions and legacy mapping. HTTP transport tests cover bounded bodies and redirect handling. A device smoke should additionally check Back and switching sources while preparing, cached-source resume with expired original media authorization, both internal player engines, and unchanged playback of an addon without the hint.
 
 This is an opt-in public-contract proposal. Upstream submission requires prior maintainer approval under CONTRIBUTING.md; a private-fork test build is not an upstream approval or release.
+
+## Test-build account configuration
+
+A source build does not automatically contain the official account backend configuration.
+The login website URL alone is insufficient to generate a QR session: a valid
+backend URL and public client authentication key are also required. These values
+must be supplied through local build configuration or an explicitly selected
+supported custom server. Never embed a private service-role key.
+
+An unconfigured build now stops the QR loading state and displays a configuration
+error, including during initial account loading. The fork's replacement test
+artifact uses a non-debuggable optimized release build and retains the separate
+test application's package and signing certificate for installation as an update.
+Its public client configuration is validated before packaging; local configuration
+and signing material remain outside Git. APK compilation and protocol tests alone
+do not prove account initialization or physical-device performance.

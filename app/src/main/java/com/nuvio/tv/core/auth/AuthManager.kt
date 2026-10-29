@@ -557,6 +557,7 @@ class AuthManager @Inject constructor(
         traceId: Long? = null,
         diagnostics: AuthDiagnosticsSession? = null
     ): Result<DeviceLoginStartResult> {
+        if (!serverConfiguration.isQrLoginConfigured()) return Result.failure(MissingQrLoginConfigurationException())
         val startedAtMs = SystemClock.elapsedRealtime()
         val trace = qrTrace(traceId)
         return try {
@@ -616,6 +617,7 @@ class AuthManager @Inject constructor(
         traceId: Long? = null,
         diagnostics: AuthDiagnosticsSession? = null
     ): Result<TvLoginStartResult> {
+        if (!serverConfiguration.isQrLoginConfigured()) return Result.failure(MissingQrLoginConfigurationException())
         val startedAtMs = SystemClock.elapsedRealtime()
         val trace = qrTrace(traceId)
         Log.d(TAG, "$trace startTvLoginSession begin nonce=${deviceNonce.rawForLog()} deviceNamePresent=${!deviceName.isNullOrBlank()} redirect=${redirectBaseUrl.urlForLog()}")
