@@ -40,6 +40,9 @@ internal suspend fun PlayerRuntimeController.runAfrPreflightIfEnabled(
     mimeType: String? = null,
     preflightToken: Long = afrPreflightGate.token()
 ) {
+    // Native/utility probes do not share the prepared media client's origin fence.
+    // Normal decoder track detection can still select the display rate after startup.
+    if (streamPreparationUrl != null) return
     fun isStale() = !afrPreflightGate.isCurrent(preflightToken)
     if (isStale()) return
     mpvDelayStartAfterAfrSwitch = false

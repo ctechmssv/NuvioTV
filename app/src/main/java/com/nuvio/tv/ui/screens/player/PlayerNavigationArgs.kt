@@ -38,7 +38,8 @@ internal data class PlayerNavigationArgs(
     val launchStartedAtMs: Long?,
     val profileId: Int?,
     val audioDelayMs: Int? = null,
-    val audioDelayLanguage: String? = null
+    val audioDelayLanguage: String? = null,
+    val streamPreparationUrl: String? = null
 ) {
     val torrentTrackers: List<String>
         get() {
@@ -100,7 +101,9 @@ internal data class PlayerNavigationArgs(
                 launchStartedAtMs = savedStateHandle.get<String>("launchStartedAtMs")?.toLongOrNull(),
                 profileId = savedStateHandle.get<String>("profileId")?.toIntOrNull(),
                 audioDelayMs = savedStateHandle.get<String>("audioDelayMs")?.toIntOrNull(),
-                audioDelayLanguage = decodedOrNull("audioDelayLanguage")
+                audioDelayLanguage = decodedOrNull("audioDelayLanguage"),
+                // Navigation already decodes the argument, as it does for streamUrl. Keep signed escapes intact.
+                streamPreparationUrl = savedStateHandle.get<String>("streamPreparationUrl")?.takeIf { it.isNotEmpty() }
             )
         }
     }

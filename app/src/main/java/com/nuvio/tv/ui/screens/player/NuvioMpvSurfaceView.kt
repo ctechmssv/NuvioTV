@@ -21,6 +21,17 @@ class NuvioMpvSurfaceView @JvmOverloads constructor(
 ) : BaseMPVView(context, attrs) {
 
     private var initialized = false
+    private var preparedStreamWait = false
+    private var previousNetworkTimeout: String? = null
+
+    fun applyPreparedStreamWait(enabled: Boolean) {
+        if (preparedStreamWait == enabled) return
+        preparedStreamWait = enabled
+        ensureInitialized()
+        // Restore the configured value on reuse, rather than changing ordinary-source settings.
+        if (enabled) previousNetworkTimeout = mpv.getPropertyString("network-timeout") ?: "60"
+        mpv.setPropertyString("network-timeout", if (enabled) "150" else previousNetworkTimeout ?: "60")
+    }
     private var hasQueuedInitialMedia = false
     private var lastMediaRequestKey: String? = null
     private var pendingInitialMediaUrl: String? = null

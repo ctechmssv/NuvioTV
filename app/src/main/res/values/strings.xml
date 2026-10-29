@@ -3414,4 +3414,14 @@
     <string name="autosync_label_synced">Auto synced</string>
     <string name="stream_resume_from_time">Resume from %1$s</string>
     <string name="stream_resume_from_percent">Resume from %1$d%%</string>
+    <!-- Optional server preparation extension; progress describes the startup buffer only. -->
+    <string name="player_preparation_source">Preparing source</string>
+    <string name="player_preparation_metadata">Reading media information</string>
+    <string name="player_preparation_buffering">Preparing startup buffer</string>
+    <string name="player_preparation_ready">Ready to play</string>
+    <string name="player_preparation_peers">%1$d peers</string>
+    <string name="player_preparation_seeders">%1$d seeds</string>
+    <string name="player_preparation_eta">About %1$d seconds remaining</string>
+    <string name="player_preparation_timeout">The server did not prepare this source in time. Select the source again or try another source.</string>
+    <string name="player_preparation_failed">The server could not prepare this source. Select the source again or try another source.</string>
 </resources>

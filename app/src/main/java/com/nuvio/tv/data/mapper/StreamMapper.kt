@@ -115,7 +115,9 @@ fun BehaviorHintsDto.toDomain(): StreamBehaviorHints = StreamBehaviorHints(
     videoSize = videoSize,
     filename = filename,
     audioDelayMs = audioDelayMs.toStreamAudioDelayMs(),
-    audioDelayLanguage = audioDelayLanguage.toStreamAudioDelayLanguage()
+    audioDelayLanguage = audioDelayLanguage.toStreamAudioDelayLanguage(),
+    // Preserve a malformed advertised hint so playback fails closed instead of opening the old URL.
+    streamPreparation = streamPreparation?.let { com.nuvio.tv.core.player.StreamPreparationHint(it.url?.takeIf(String::isNotBlank) ?: "invalid:") }
 )
 
 fun ProxyHeadersDto.toDomain(): ProxyHeaders = ProxyHeaders(

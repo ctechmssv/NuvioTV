@@ -112,7 +112,7 @@ private suspend fun PlayerRuntimeController.resolveCurrentStreamMimeType(
     currentStreamMimeType?.let { resolvedMimeType ->
         Log.d(
             PlayerRuntimeController.TAG,
-            "Resolved stream mimeType=$resolvedMimeType for url=$url"
+            "Resolved stream mimeType=$resolvedMimeType for host=${runCatching { java.net.URI(url).host }.getOrNull() ?: "unknown"}"
         )
         return
     }
@@ -124,7 +124,7 @@ private suspend fun PlayerRuntimeController.resolveCurrentStreamMimeType(
     )
     Log.d(
         PlayerRuntimeController.TAG,
-        "Resolved stream mimeType=${currentStreamMimeType ?: "unknown"} for url=$url"
+        "Resolved stream mimeType=${currentStreamMimeType ?: "unknown"} for host=${runCatching { java.net.URI(url).host }.getOrNull() ?: "unknown"}"
     )
 }
 
@@ -161,6 +161,10 @@ internal fun PlayerRuntimeController.initializePlayer(
         _uiState.update { it.copy(error = context.getString(R.string.player_error_no_stream_url), showLoadingOverlay = false) }
         return
     }
+    if (prepareServerPlaybackIfNeeded(url, headers) { readyUrl ->
+            initializePlayer(readyUrl, headers, overrideInternalPlayerEngine, allowEngineFailover, startPaused)
+        }) return
+    mediaSourceFactory.preparedStreamOrigin = preparedServerPlaybackUrl?.takeIf { it == url }
     mpvMediaLoadPrepared = false
     val afrPreflightToken = afrPreflightGate.token()
 
@@ -998,7 +1002,7 @@ internal fun PlayerRuntimeController.initializePlayer(
                     extractorsFactory = effectiveExtractorsFactory,
                     subtitleParserFactory = null
                 )
-                val playerDataSourceFactory = PlayerPlaybackNetworking.createDataSourceFactory(context, headers)
+                val playerDataSourceFactory = PlayerPlaybackNetworking.createDataSourceFactory(context, headers, mediaSourceFactory.preparedStreamOrigin)
                 ExoPlayer.Builder(context)
                     .setBandwidthMeter(bandwidthMeter)
                     .setTrackSelector(trackSelector!!)
@@ -1026,7 +1030,7 @@ internal fun PlayerRuntimeController.initializePlayer(
                 com.nuvio.tv.libass.media.AssHandler.setRenderScale(
                     playerSettings.libassRenderScale.scale
                 )
-                val playerDataSourceFactory = PlayerPlaybackNetworking.createDataSourceFactory(context, headers)
+                val playerDataSourceFactory = PlayerPlaybackNetworking.createDataSourceFactory(context, headers, mediaSourceFactory.preparedStreamOrigin)
                 ExoPlayer.Builder(context)
                     .setBandwidthMeter(bandwidthMeter)
                     .setLoadControl(loadControl)

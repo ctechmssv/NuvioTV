@@ -815,6 +815,7 @@ internal fun PlayerRuntimeController.maybeScheduleStallWatchdog() {
                         playheadMs = livePlayer.currentPosition,
                         durationMs = livePlayer.duration,
                         stalledForMs = stalledForMs,
+                        thresholdMs = if (preparedServerPlaybackUrl != null) 150_000L else PlayerRuntimeController.STALL_WATCHDOG_THRESHOLD_MS,
                     )
                 )
             ) {

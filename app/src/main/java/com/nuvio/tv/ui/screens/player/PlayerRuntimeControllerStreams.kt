@@ -654,6 +654,8 @@ private fun PlayerRuntimeController.applySelectedStreamState(
  * of stream type — critical for next-episode binge matching.
  */
 private fun PlayerRuntimeController.applyStreamMetadata(stream: Stream) {
+    streamPreparationUrl = stream.behaviorHints?.streamPreparation?.url
+    preparedServerPlaybackUrl = null
     currentStreamBingeGroup = stream.behaviorHints?.bingeGroup
     applyStreamAudioDelay(stream.behaviorHints?.audioDelayMs, stream.behaviorHints?.audioDelayLanguage)
     currentVideoHash = stream.behaviorHints?.videoHash
@@ -760,7 +762,8 @@ private fun PlayerRuntimeController.persistSelectedStreamForReuse(
             contentLanguage = contentLanguage,
             year = year,
             audioDelayMs = stream.behaviorHints?.audioDelayMs,
-            audioDelayLanguage = stream.behaviorHints?.audioDelayLanguage
+            audioDelayLanguage = stream.behaviorHints?.audioDelayLanguage,
+            streamPreparationUrl = stream.behaviorHints?.streamPreparation?.url
         )
     }
 }
@@ -789,7 +792,8 @@ private fun PlayerRuntimeController.persistTorrentStreamForReuse(stream: Stream)
             contentLanguage = contentLanguage,
             year = year,
             audioDelayMs = stream.behaviorHints?.audioDelayMs,
-            audioDelayLanguage = stream.behaviorHints?.audioDelayLanguage
+            audioDelayLanguage = stream.behaviorHints?.audioDelayLanguage,
+            streamPreparationUrl = stream.behaviorHints?.streamPreparation?.url
         )
     }
 }
@@ -852,6 +856,7 @@ private fun PlayerRuntimeController.openExternalStreamInBrowser(
 internal fun PlayerRuntimeController.switchToSourceStream(
     stream: Stream
 ) {
+    cancelServerStreamPreparation()
     sourceStreamsScope?.cancel()
     sourceStreamsScope = null
     sourceStreamsJob = null
@@ -1003,6 +1008,10 @@ internal fun PlayerRuntimeController.switchToSourceStream(
     showStreamSourceIndicator(stream)
     resetPostPlayOverlayState(clearEpisode = false)
 
+    if (streamPreparationUrl != null) {
+        preparePlaybackBeforeStart(playbackUrl, playbackHeaders, loadSavedProgress = true)
+        return
+    }
     _exoPlayer?.let { player ->
         scope.launch {
             try {
@@ -1425,6 +1434,7 @@ internal fun PlayerRuntimeController.switchToEpisodeStream(
     forcedTargetVideo: Video? = null,
     isAutoPlay: Boolean = false
 ) {
+    cancelServerStreamPreparation()
     if (openExternalStreamInBrowser(stream = stream, fromEpisodePanel = true)) {
         return
     }
