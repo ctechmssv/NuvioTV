@@ -100,7 +100,8 @@ internal object PlayerPlaybackNetworking {
 
     fun createHttpClient(
         defaultHeaders: Map<String, String> = emptyMap(),
-        useLongReadTimeout: Boolean = false
+        useLongReadTimeout: Boolean = false,
+        preparedStreamOrigin: String? = null
     ): OkHttpClient {
         val builder = playbackHttpClient.newBuilder()
         if (useLongReadTimeout) {
@@ -119,15 +120,32 @@ internal object PlayerPlaybackNetworking {
                 chain.proceed(next.build())
             }
         }
-        return builder
+        val client = builder
             .let { NuvioExoPlayerPerformanceHelper.applyNetworkOptimizations(it) }
             .build()
+        return if (preparedStreamOrigin == null) client else preparedStreamClient(client, preparedStreamOrigin)
     }
+
+    /** Only negotiated preparation streams may wait for a cold seek range. Legacy clients stay unchanged. */
+    internal fun preparedStreamClient(client: OkHttpClient, origin: String): OkHttpClient = client.newBuilder()
+        // The legacy SSLException interceptor makes an independent trust-all call. That call
+        // would bypass this client's origin fence, so negotiated sources use normal TLS only.
+        .apply { interceptors().clear() }
+        .readTimeout(150, TimeUnit.SECONDS)
+        .addNetworkInterceptor { chain ->
+            try {
+                com.nuvio.tv.core.player.StreamPreparationProtocol.sameOriginUrl(origin, chain.request().url.toString())
+            } catch (_: Exception) {
+                throw java.io.IOException("Prepared media redirect left its origin")
+            }
+            chain.proceed(chain.request())
+        }.build()
 
     @UnstableApi
     fun createHttpDataSourceFactory(
         defaultHeaders: Map<String, String> = emptyMap(),
-        useLongReadTimeout: Boolean = false
+        useLongReadTimeout: Boolean = false,
+        preparedStreamOrigin: String? = null
     ): DataSource.Factory {
         val requestHeaders = defaultHeaders.mapNotNull { (rawKey, rawValue) ->
             val key = rawKey.trim()
@@ -138,22 +156,24 @@ internal object PlayerPlaybackNetworking {
                 key to value
             }
         }.toMap()
-        val client = createHttpClient(requestHeaders, useLongReadTimeout)
+        val client = createHttpClient(requestHeaders, useLongReadTimeout, preparedStreamOrigin)
         val httpFactory = OkHttpDataSource.Factory(client).apply {
             setDefaultRequestProperties(requestHeaders)
             if (requestHeaders.none { it.key.equals("User-Agent", ignoreCase = true) }) {
                 setUserAgent(PlayerMediaSourceFactory.DEFAULT_USER_AGENT)
             }
         }
-        return LoggingDataSourceFactory(httpFactory, "HTTP")
+        // Existing diagnostics can include a signed request URL in an exception message.
+        return if (preparedStreamOrigin != null) httpFactory else LoggingDataSourceFactory(httpFactory, "HTTP")
     }
 
     @UnstableApi
     fun createDataSourceFactory(
         context: android.content.Context,
-        defaultHeaders: Map<String, String> = emptyMap()
+        defaultHeaders: Map<String, String> = emptyMap(),
+        preparedStreamOrigin: String? = null
     ): DataSource.Factory {
-        return DefaultDataSource.Factory(context, createHttpDataSourceFactory(defaultHeaders))
+        return DefaultDataSource.Factory(context, createHttpDataSourceFactory(defaultHeaders, preparedStreamOrigin = preparedStreamOrigin))
     }
 
     fun openConnection(

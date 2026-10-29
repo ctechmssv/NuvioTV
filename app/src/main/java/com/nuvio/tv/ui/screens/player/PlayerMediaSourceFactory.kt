@@ -125,6 +125,7 @@ internal class PlayerMediaSourceFactory(private val context: Context) {
     // Reported only: both decide which target the helper hands the load control, so a log without
     // them cannot say why a run used the size it did.
     var bufferEngineEnabled: Boolean = false
+    var preparedStreamOrigin: String? = null
     var bufferBudgetManaged: Boolean = PlayerSettings.DEFAULT_BUFFER_BUDGET_MANAGED
     var vodCacheEnabled: Boolean = PlayerSettings.DEFAULT_VOD_CACHE_ENABLED
     var vodCacheSizeMode: VodCacheSizeMode = PlayerSettings.DEFAULT_VOD_CACHE_SIZE_MODE
@@ -188,10 +189,11 @@ internal class PlayerMediaSourceFactory(private val context: Context) {
                 PlayerPlaybackNetworking.createHttpDataSourceFactory(
                     sanitizedHeaders,
                     useLongReadTimeout = isLoopbackUrl(url),
+                    preparedStreamOrigin = preparedStreamOrigin,
                 ),
             )
         } else {
-            PlayerPlaybackNetworking.createDataSourceFactory(context, sanitizedHeaders)
+            PlayerPlaybackNetworking.createDataSourceFactory(context, sanitizedHeaders, preparedStreamOrigin)
         }
 
         val mediaItemBuilder = MediaItem.Builder().setUri(url)
@@ -224,7 +226,10 @@ internal class PlayerMediaSourceFactory(private val context: Context) {
         parallelStartupPrefetchUnlocked.set(!useChunkSessionSource)
         val networkProgressiveFactory: DataSource.Factory = if (useChunkSessionSource) {
             val sessionConnections = parallelConnectionCount
-            val okHttpFactory = OkHttpDataSource.Factory(playbackHttpClient).apply {
+            val streamClient = preparedStreamOrigin?.let {
+                PlayerPlaybackNetworking.preparedStreamClient(playbackHttpClient, it)
+            } ?: playbackHttpClient
+            val okHttpFactory = OkHttpDataSource.Factory(streamClient).apply {
                 setDefaultRequestProperties(sanitizedHeaders)
                 if (sanitizedHeaders.none { it.key.equals("User-Agent", ignoreCase = true) }) {
                     setUserAgent(DEFAULT_USER_AGENT)
@@ -248,7 +253,7 @@ internal class PlayerMediaSourceFactory(private val context: Context) {
                 onResolvedUri = { resolved -> currentVodCacheResolvedUrl = resolved?.toString() }
             )
         } else if (isLoopbackUrl(url)) {
-            PlayerPlaybackNetworking.createHttpDataSourceFactory(sanitizedHeaders, useLongReadTimeout = true)
+            PlayerPlaybackNetworking.createHttpDataSourceFactory(sanitizedHeaders, useLongReadTimeout = true, preparedStreamOrigin = preparedStreamOrigin)
         } else {
             httpDataSourceFactory
         }
@@ -914,7 +919,8 @@ internal class PlayerMediaSourceFactory(private val context: Context) {
 
         suspend fun probeNetworkMimeType(
             url: String,
-            headers: Map<String, String> = emptyMap()
+            headers: Map<String, String> = emptyMap(),
+            preparedStreamOrigin: String? = null
         ): String? = withContext(Dispatchers.IO) {
             if (!url.startsWith("http://", ignoreCase = true) && !url.startsWith("https://", ignoreCase = true)) {
                 return@withContext null
@@ -936,7 +942,10 @@ internal class PlayerMediaSourceFactory(private val context: Context) {
                         requestBuilder.header("User-Agent", DEFAULT_USER_AGENT)
                     }
 
-                    PlayerPlaybackNetworking.playbackHttpClient.newCall(requestBuilder.build()).execute().use { response ->
+                    val client = preparedStreamOrigin?.let {
+                        PlayerPlaybackNetworking.preparedStreamClient(PlayerPlaybackNetworking.playbackHttpClient, it)
+                    } ?: PlayerPlaybackNetworking.playbackHttpClient
+                    client.newCall(requestBuilder.build()).execute().use { response ->
                         if (!response.isSuccessful && response.code !in 200..308) {
                             return@use null
                         }

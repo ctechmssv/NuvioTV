@@ -86,6 +86,7 @@ data class PlayerUiState(
     val showPlayerLoadingStatus: Boolean = false,
     val playbackIssueReportsEnabled: Boolean = false,
     val showLoadingOverlay: Boolean = true,
+    val isServerPreparing: Boolean = false,
     val loadingMessage: String? = null,
     val loadingProgress: Float? = null,
     val loadingIssueReportVisible: Boolean = false,

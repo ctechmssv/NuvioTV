@@ -703,6 +703,10 @@ class PlayerRuntimeController(
     internal var hasRequestedScrobbleStartForCurrentItem: Boolean = false
     internal var scrobbleStartRequestGeneration: Long = 0L
     internal var playbackPreparationJob: Job? = null
+    internal var streamPreparationUrl: String? = navigationArgs.streamPreparationUrl
+    internal var streamPreparationJob: Job? = null
+    internal var streamPreparationSession: com.nuvio.tv.core.player.StreamPreparationSession? = null
+    internal var preparedServerPlaybackUrl: String? = null
     internal var traktMappingJob: Job? = null
     internal var hasSentCompletionScrobbleForCurrentItem: Boolean = false
 

@@ -353,6 +353,7 @@ internal fun PlayerRuntimeController.maybeRunMpvStartupWatchdog(view: NuvioMpvSu
     val step = MpvStartupWatchdogPolicy.step(
         MpvStartupWatchdogPolicy.Input(
             enabled = enabled,
+            serverPrepared = preparedServerPlaybackUrl != null,
             waitingForSurface = waitingForSurface,
             idleActive = idleActive,
             cacheProgressing = cacheProgressing,

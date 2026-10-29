@@ -508,7 +508,8 @@ internal fun PlayerRuntimeController.tryParsingErrorProbeFallback(
         showRecoveryOverlay()
         val probedMime = PlayerMediaSourceFactory.probeNetworkMimeType(
             url = currentStreamUrl,
-            headers = currentHeaders
+            headers = currentHeaders,
+            preparedStreamOrigin = preparedServerPlaybackUrl
         )
 
         if (probedMime != null && probedMime != previousMimeType) {

@@ -98,8 +98,11 @@ data class BehaviorHintsDto(
     @Json(name = "videoSize") val videoSize: Long? = null,
     @Json(name = "filename") val filename: String? = null,
     @Json(name = "audioDelayMs") val audioDelayMs: Double? = null,
-    @Json(name = "audioDelayLanguage") val audioDelayLanguage: String? = null
+    @Json(name = "audioDelayLanguage") val audioDelayLanguage: String? = null,
+    @Json(name = "streamPreparation") val streamPreparation: StreamPreparationHintDto? = null
 )
+@JsonClass(generateAdapter = true)
+data class StreamPreparationHintDto(@Json(name = "url") val url: String? = null)
 
 @JsonClass(generateAdapter = true)
 data class ProxyHeadersDto(

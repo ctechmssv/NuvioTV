@@ -220,7 +220,8 @@ data class StreamBehaviorHints(
     // Extra audio delay for this stream (ms, >0 = audio later), added on top of the user's/device delay.
     val audioDelayMs: Int? = null,
     // When set, audioDelayMs only applies to audio and embedded subtitle tracks in this language.
-    val audioDelayLanguage: String? = null
+    val audioDelayLanguage: String? = null,
+    val streamPreparation: com.nuvio.tv.core.player.StreamPreparationHint? = null
 )
 
 @Immutable

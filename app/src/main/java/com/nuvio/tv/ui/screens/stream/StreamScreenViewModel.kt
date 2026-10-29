@@ -501,7 +501,8 @@ class StreamScreenViewModel @Inject constructor(
                                 sources = cached.sources,
                                 contentLanguage = cached.contentLanguage ?: contentLanguage,
                                 audioDelayMs = cached.audioDelayMs,
-                                audioDelayLanguage = cached.audioDelayLanguage
+                                audioDelayLanguage = cached.audioDelayLanguage,
+                                streamPreparationUrl = cached.streamPreparationUrl
                             ),
                             showDirectAutoPlayOverlay = showOverlay || it.showDirectAutoPlayOverlay,
                             isDirectAutoPlayFlow = showOverlay || it.isDirectAutoPlayFlow
@@ -1578,7 +1579,8 @@ class StreamScreenViewModel @Inject constructor(
             sources = stream.sources,
             contentLanguage = contentLanguage,
             audioDelayMs = stream.behaviorHints?.audioDelayMs,
-            audioDelayLanguage = stream.behaviorHints?.audioDelayLanguage
+            audioDelayLanguage = stream.behaviorHints?.audioDelayLanguage,
+            streamPreparationUrl = stream.behaviorHints?.streamPreparation?.url
         )
         StreamSidecarSubtitles.set(playbackUrlFor(playbackInfo), stream.subtitles)
 
@@ -1597,7 +1599,8 @@ class StreamScreenViewModel @Inject constructor(
                     contentLanguage = contentLanguage,
                     year = year,
                     audioDelayMs = playbackInfo.audioDelayMs,
-                    audioDelayLanguage = playbackInfo.audioDelayLanguage
+                    audioDelayLanguage = playbackInfo.audioDelayLanguage,
+                    streamPreparationUrl = playbackInfo.streamPreparationUrl
                 )
             }
         }
@@ -2131,6 +2134,7 @@ data class StreamPlaybackInfo(
     val contentLanguage: String? = null,
     val audioDelayMs: Int? = null,
     val audioDelayLanguage: String? = null,
+    val streamPreparationUrl: String? = null,
     val isServerStream: Boolean = false
 )
 

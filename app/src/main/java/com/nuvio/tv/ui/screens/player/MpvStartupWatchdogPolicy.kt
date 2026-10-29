@@ -34,6 +34,7 @@ internal object MpvStartupWatchdogPolicy {
         val idleActive: Boolean,
         val cacheProgressing: Boolean,
         val counters: Counters,
+        val serverPrepared: Boolean = false,
     )
 
     data class Step(
@@ -57,13 +58,16 @@ internal object MpvStartupWatchdogPolicy {
             return Step(Action.Continue, Counters(surfaceWaitTicks = next))
         }
 
+        val absoluteLimit = if (input.serverPrepared) 180_000L / POLL_INTERVAL_MS else absoluteTicksLimit.toLong()
+        val stallLimit = if (input.serverPrepared) 150_000L / POLL_INTERVAL_MS else stallTicksLimit.toLong()
+        val idleLimit = if (input.serverPrepared) 150_000L / POLL_INTERVAL_MS else idleTicksLimit.toLong()
         val absolute = input.counters.absoluteTicks + 1
         if (input.idleActive) {
             val idle = input.counters.idleTicks + 1
-            if (idle >= idleTicksLimit) {
+            if (idle >= idleLimit) {
                 return Step(Action.IdleError, Counters())
             }
-            if (absolute >= absoluteTicksLimit) {
+            if (absolute >= absoluteLimit) {
                 return Step(Action.AbsoluteTimeout, Counters())
             }
             return Step(
@@ -76,11 +80,11 @@ internal object MpvStartupWatchdogPolicy {
             )
         }
 
-        if (absolute >= absoluteTicksLimit) {
+        if (absolute >= absoluteLimit) {
             return Step(Action.AbsoluteTimeout, Counters())
         }
         val stall = if (input.cacheProgressing) 0 else input.counters.stallTicks + 1
-        if (stall >= stallTicksLimit) {
+        if (stall >= stallLimit) {
             return Step(Action.StallTimeout, Counters())
         }
         return Step(

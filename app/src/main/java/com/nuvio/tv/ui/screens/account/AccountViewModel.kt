@@ -8,6 +8,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nuvio.tv.R
 import com.nuvio.tv.core.auth.AuthManager
+import com.nuvio.tv.core.auth.MissingQrLoginConfigurationException
+import com.nuvio.tv.core.auth.isQrLoginConfigured
 import com.nuvio.tv.core.auth.diagnostics.AuthDiagnosticsSession
 import com.nuvio.tv.core.logging.bodySnippetForLog
 import com.nuvio.tv.core.logging.diagnosticSummary
@@ -99,6 +101,12 @@ class AccountViewModel @Inject constructor(
         get() = serverConfiguration.isCustom && serverConfiguration.capabilities.emailPasswordAuth
 
     init {
+        // The QR screen waits for auth startup before calling startQrLogin. Surface invalid
+        // build configuration now as well, even if that startup is still loading.
+        if (!serverConfiguration.isQrLoginConfigured()) {
+            val message = context.getString(R.string.account_error_qr_login_not_configured)
+            _uiState.update { it.withMissingQrLoginConfiguration(message) }
+        }
         observeAuthState()
         observeProfileNames()
     }
@@ -273,6 +281,14 @@ class AccountViewModel @Inject constructor(
     }
 
     fun startQrLogin() {
+        if (!serverConfiguration.isQrLoginConfigured()) {
+            cancelQrLoginPolling()
+            activeQrLoginTraceId = null
+            qrLoginExchangeInFlight = false
+            val message = context.getString(R.string.account_error_qr_login_not_configured)
+            _uiState.update { it.withMissingQrLoginConfiguration(message) }
+            return
+        }
         viewModelScope.launch {
             val traceId = qrLoginTraceCounter.incrementAndGet()
             val startedAtMs = SystemClock.elapsedRealtime()
@@ -578,6 +594,7 @@ class AccountViewModel @Inject constructor(
     }
 
     private fun userFriendlyError(e: Throwable): String {
+        if (e is MissingQrLoginConfigurationException) return context.getString(R.string.account_error_qr_login_not_configured)
         val raw = e.message ?: ""
         val message = raw.lowercase()
         val compactRaw = raw.bodySnippetForLog()
